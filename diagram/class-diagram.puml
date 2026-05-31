@@ -1,0 +1,1270 @@
+@startuml
+!pragma layout smetana
+left to right direction
+
+hide circle
+
+skinparam shadowing false
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam ArrowColor #3B4252
+skinparam ArrowThickness 1.1
+skinparam PackageBorderColor #4C566A
+skinparam PackageBackgroundColor #F8F8F8
+skinparam ClassBorderColor #3B4252
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassFontColor #20242A
+skinparam NoteBackgroundColor #FFF8D6
+skinparam NoteBorderColor #B48A00
+skinparam TitleFontSize 18
+skinparam TitleFontStyle bold
+
+skinparam classBackgroundColor<<Model>> #E6F2FF
+skinparam classBackgroundColor<<View>> #EAF7EA
+skinparam classBackgroundColor<<Controller>> #FFF1E6
+skinparam classBackgroundColor<<Observer>> #F4E8FF
+skinparam classBackgroundColor<<Observable>> #F4E8FF
+skinparam classBackgroundColor<<Singleton>> #EFFFFA
+skinparam classBackgroundColor<<Factory>> #FFFBE6
+skinparam classBackgroundColor<<Strategy>> #F2EEFF
+skinparam classBackgroundColor<<State>> #FFEFF5
+skinparam classBackgroundColor<<Command>> #EEF5FF
+skinparam classBackgroundColor<<Repository>> #F0F0F0
+skinparam classBackgroundColor<<Facade>> #E8FFFF
+skinparam classBackgroundColor<<Entity>> #FFFFFF
+skinparam classBackgroundColor<<Item>> #FFFFFF
+
+title JZelda - Diagramma delle classi completo MVC, Pattern, Swing, livelli, shop, persistenza
+
+package "jzelda" as pkg_root {
+class JZelda <<Application>> {
+-JZelda()
++{static} main(args: String[]): void
+}
+}
+
+package "jzelda.app" as pkg_app {
+class GameLauncher <<Application>> {
++start(): void
+}
+}
+
+package "jzelda.model" as pkg_model {
+class GameConfig <<Model>> {
++{static} TILE_SIZE: int
++{static} MAP_COLUMNS: int
++{static} MAP_ROWS: int
++{static} HUD_HEIGHT: int
++{static} FRAME_DELAY_MS: int
++{static} STARTING_LIVES: int
++{static} STARTING_CONTINUES: int
+}
+
+class GameModel <<Model>> {
+    -facade: GameFacade
+    -states: Map<String, GameState>
+    -levelManager: LevelManager
+    -shop: Shop
+    -effects: List<VisualEffect>
+    -currentState: GameState
+    -player: Player
+    -score: int
+    -continuesLeft: int
+    -menuIndex: int
+    -menuOptions: List<String>
+    -message: String
+    -exitRequested: boolean
+    -pendingNextLevelAfterShop: boolean
+    -runFinished: boolean
+    -titleClockMs: long
+    -attackFlashMs: long
+    -lastAttackBounds: Rectangle2D.Double
+
+    +GameModel(facade: GameFacade)
+    +update(deltaMs: long): void
+    +handleCommand(command: InputCommand): void
+    +changeState(key: String): void
+    +transitionTo(key: String): void
+    +startGame(profile: Profile): void
+    +startNewGame(profile: Profile): void
+    +createProfile(nickname: String): void
+    +updateGameplay(deltaMs: long): void
+    +movePlayer(direction: Direction): void
+    +moveEnemyWithCollision(enemy: Enemy, dx: double, dy: double): boolean
+    +spawnProjectile(projectile: Projectile): void
+    +attack(): void
+    +damagePlayer(amount: int, reason: String): void
+    +continueRun(): void
+    +completeLevel(): void
+    +enterShop(advanceAfterShop: boolean): void
+    +leaveShop(): void
+    +pause(): void
+    +interact(): void
+    +finishRun(victory: boolean): void
+    +addScore(amount: int): void
+    +setMenuOptions(options: List<String>): void
+    +navigateMenu(delta: int): void
+    +confirmSelection(): void
+    +goBack(): void
+    +selectNumber(number: int): void
+    +addEffect(text: String, x: double, y: double): void
+    +tickTitleAnimation(deltaMs: long): void
+    +requestExit(): void
+    +getFacade(): GameFacade
+    +getPlayer(): Player
+    +getLevelManager(): LevelManager
+    +getCurrentLevel(): Level
+    +getShop(): Shop
+    +getScore(): int
+    +getContinuesLeft(): int
+    +getStateName(): String
+    +getEffects(): List<VisualEffect>
+    +isAttackFlashVisible(): boolean
+    +isExitRequested(): boolean
+}
+
+class VisualEffect <<Model>> {
+    -text: String
+    -x: double
+    -y: double
+    -totalMs: long
+    -remainingMs: long
+
+    +VisualEffect(text: String, x: double, y: double, durationMs: long)
+    +update(deltaMs: long): void
+    +isAlive(): boolean
+    +getText(): String
+    +getX(): double
+    +getY(): double
+    +getProgress(): double
+}
+
+class CollisionManager <<Model>> {
+    +checkCollision(entity: Entity, level: Level): boolean
+    +checkCollision(a: Rectangle2D.Double, b: Rectangle2D.Double): boolean
+    +isBlocked(bounds: Rectangle2D.Double, level: Level): boolean
+    +resolveMove(entity: Entity, dx: double, dy: double, level: Level): boolean
+    +touchesPlayer(enemy: Enemy, player: Player): boolean
+    +touchesExit(player: Player, level: Level): boolean
+}
+
+
+}
+
+package "jzelda.view" as pkg_view {
+class GameView <<View>> {
+-model: GameModel
+-panel: GamePanel
+
+
+    +GameView(model: GameModel)
+    +onModelChanged(event: ModelEvent): void
+    +focusGame(): void
+    +addGameKeyListener(listener: KeyListener): void
+    +promptForProfileNickname(): String
+    +dispose(): void
+}
+
+class GamePanel <<View>> {
+    -model: GameModel
+    -resources: ResourceManager
+    -animationManager: AnimationManager
+
+    +GamePanel(model: GameModel)
+    #paintComponent(graphics: Graphics): void
+    +render(g: Graphics2D): void
+    -drawHud(g: Graphics2D): void
+    -drawMap(g: Graphics2D): void
+    -drawEntities(g: Graphics2D): void
+    -drawEffects(g: Graphics2D): void
+    -drawOverlays(g: Graphics2D): void
+}
+
+class AnimationManager <<View>> {
+    -frameClockMs: long
+    -frameDurationMs: long
+
+    +update(deltaMs: long): void
+    +frameFor(entity: Entity): int
+    +frameForSprite(spriteKey: String, deltaMs: long): int
+    +drawAnimatedSprite(g: Graphics2D, entity: Entity, offsetY: int): void
+    +transitionToLevel(levelNumber: int): VisualEffect
+}
+
+class RetroPalette <<View>> {
+    +{static} INK: Color
+    +{static} HUD: Color
+    +{static} FLOOR: Color
+    +{static} WALL: Color
+    +{static} GOLD: Color
+    +{static} TEXT: Color
+    +{static} RED: Color
+    +{static} GREEN: Color
+    +{static} BLUE: Color
+    +{static} SHADOW: Color
+}
+
+
+}
+
+package "jzelda.controller" as pkg_controller {
+class GameController <<Controller>> {
+-model: GameModel
+-view: GameView
+-pressedKeys: Set<Integer>
+-timer: Timer
+-gameLoop: GameLoop
+-lastTick: long
+
+
+    +GameController(model: GameModel, view: GameView)
+    +start(): void
+    +stop(): void
+    +actionPerformed(event: ActionEvent): void
+    +keyPressed(event: KeyEvent): void
+    +keyReleased(event: KeyEvent): void
+    +keyTyped(event: KeyEvent): void
+    +handleInput(event: KeyEvent): void
+    -issueMovementCommand(): void
+    -commandForKey(code: int): InputCommand
+}
+
+class GameLoop <<Controller>> {
+    -timer: Timer
+    -frameDelayMs: int
+    -lastTick: long
+    -running: boolean
+
+    +GameLoop(controller: GameController, delayMs: int)
+    +start(): void
+    +stop(): void
+    +tick(): void
+    +calculateDelta(): long
+    +isRunning(): boolean
+}
+
+
+}
+
+package "jzelda.commands" as pkg_commands {
+interface InputCommand <<Command>> {
++execute(model: GameModel): void
++getName(): String
+}
+
+class MoveCommand <<Command>> {
+    -direction: Direction
+
+    +MoveCommand(direction: Direction)
+    +getDirection(): Direction
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class AttackCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class InteractCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class PauseCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class ContinueCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class ConfirmCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class BackCommand <<Command>> {
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class NavigateMenuCommand <<Command>> {
+    -delta: int
+
+    +NavigateMenuCommand(delta: int)
+    +getDelta(): int
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+class NumberCommand <<Command>> {
+    -number: int
+
+    +NumberCommand(number: int)
+    +getNumber(): int
+    +execute(model: GameModel): void
+    +getName(): String
+}
+
+
+}
+
+package "jzelda.patterns" as pkg_patterns {
+interface "ObservableModel\n(GameObservable)" as GameObservable <<Observable>> {
++addObserver(observer: GameObserver): void
++removeObserver(observer: GameObserver): void
++notifyObservers(type: String, message: String): void
+}
+
+
+interface "ModelObserver\n(GameObserver)" as GameObserver <<Observer>> {
+    +onModelChanged(event: ModelEvent): void
+}
+
+abstract class AbstractObservableModel <<Observable>> {
+    -observers: List<GameObserver>
+
+    +addObserver(observer: GameObserver): void
+    +removeObserver(observer: GameObserver): void
+    +notifyObservers(type: String, message: String): void
+}
+
+class ModelEvent <<Observer>> {
+    -type: String
+    -message: String
+    -model: GameModel
+
+    +ModelEvent(type: String, message: String, model: GameModel)
+    +getType(): String
+    +getMessage(): String
+    +getModel(): GameModel
+}
+
+class GameFacade <<Facade>> {
+    -resources: ResourceManager
+    -audio: AudioManager
+    -profileManager: ProfileManager
+    -leaderboard: Leaderboard
+    -persistence: PersistenceFacade
+
+    +GameFacade(resources: ResourceManager, audio: AudioManager, profiles: ProfileManager, leaderboard: Leaderboard)
+    +resources(): ResourceManager
+    +audio(): AudioManager
+    +profiles(): ProfileManager
+    +leaderboard(): Leaderboard
+    +persistence(): PersistenceFacade
+}
+
+
+}
+
+package "jzelda.states" as pkg_states {
+interface GameState <<State>> {
++enter(model: GameModel): void
++update(model: GameModel, deltaMs: long): void
++handleCommand(model: GameModel, command: InputCommand): void
++getName(): String
+}
+
+
+class MenuState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class ProfileSelectState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class PlayingState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class "PausedState\n(PauseState)" as PausedState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class ShopState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class GameOverState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class LeaderboardState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+class VictoryState <<State>> {
+    +enter(model: GameModel): void
+    +update(model: GameModel, deltaMs: long): void
+    +handleCommand(model: GameModel, command: InputCommand): void
+    +getName(): String
+}
+
+
+}
+
+package "jzelda.entities" as pkg_entities {
+enum Direction {
+UP
+DOWN
+LEFT
+RIGHT
+NONE
++dx(): int
++dy(): int
+}
+
+
+abstract class Entity <<Entity>> {
+    #x: double
+    #y: double
+    #width: int
+    #height: int
+    #health: int
+    #alive: boolean
+    #spriteKey: String
+
+    #Entity(x: double, y: double, width: int, height: int, health: int, spriteKey: String)
+    +getX(): double
+    +getY(): double
+    +setPosition(x: double, y: double): void
+    +translate(dx: double, dy: double): void
+    +getWidth(): int
+    +getHeight(): int
+    +getHealth(): int
+    +setHealth(health: int): void
+    +damage(amount: int): void
+    +heal(amount: int): void
+    +isAlive(): boolean
+    +setAlive(alive: boolean): void
+    +getSpriteKey(): String
+    +setSpriteKey(spriteKey: String): void
+    +getBounds(): Rectangle2D.Double
+}
+
+class Player <<Entity>> {
+    -maxHealth: int
+    -lives: int
+    -rupees: int
+    -direction: Direction
+    -inventory: Inventory
+    -attackCooldownMs: long
+    -invulnerabilityMs: long
+    -shieldMs: long
+    -speedBoostMs: long
+
+    +Player(x: double, y: double)
+    +updateTimers(deltaMs: long): void
+    +restoreFullHealth(): void
+    +increaseMaxHealth(amount: int): void
+    +loseLife(): void
+    +addRupees(amount: int): void
+    +spendRupees(amount: int): boolean
+    +canAttack(): boolean
+    +resetAttackCooldown(): void
+    +grantInvulnerability(durationMs: long): void
+    +activateShield(durationMs: long): void
+    +activateSpeedBoost(durationMs: long): void
+    +addInventory(key: String, amount: int): void
+    +consumeInventory(key: String, amount: int): boolean
+    +getInventory(): Map<String, Integer>
+    +getAnimationFrame(): int
+    +getAttackBounds(): Rectangle2D.Double
+}
+
+abstract class Enemy <<Entity>> {
+    #behavior: EnemyStrategy
+    #contactDamage: int
+
+    #Enemy(x: double, y: double, health: int, spriteKey: String, behavior: EnemyStrategy)
+    +update(model: GameModel, deltaMs: long): void
+    +getBehavior(): EnemyStrategy
+    +setBehavior(behavior: EnemyStrategy): void
+    +getContactDamage(): int
+    +setContactDamage(contactDamage: int): void
+    +getAnimationFrame(): int
+}
+
+class PatrolEnemy <<Entity>> {
+    +PatrolEnemy(x: double, y: double)
+}
+
+class ShooterEnemy <<Entity>> {
+    +ShooterEnemy(x: double, y: double)
+}
+
+class Projectile <<Entity>> {
+    -dx: double
+    -dy: double
+    -damage: int
+
+    +Projectile(x: double, y: double, dx: double, dy: double, damage: int)
+    +update(deltaMs: long): void
+    +getDamage(): int
+}
+
+interface "EnemyBehavior\n(EnemyStrategy)" as EnemyStrategy <<Strategy>> {
+    +update(enemy: Enemy, model: GameModel, deltaMs: long): void
+    +getName(): String
+}
+
+class ChasePatrolBehavior <<Strategy>> {
+    -speed: double
+    -direction: int
+    -chaseRange: double
+
+    +update(enemy: Enemy, model: GameModel, deltaMs: long): void
+    +getName(): String
+}
+
+class RandomShooterBehavior <<Strategy>> {
+    -speed: double
+    -random: Random
+    -decisionMs: long
+    -shootCooldownMs: long
+
+    +update(enemy: Enemy, model: GameModel, deltaMs: long): void
+    +getName(): String
+}
+
+class EntityFactory <<Factory>> {
+    +createEnemy(code: char, x: double, y: double): Enemy
+    +createPlayer(x: double, y: double): Player
+    +createProjectile(x: double, y: double, dx: double, dy: double, damage: int): Projectile
+}
+
+
+}
+
+package "jzelda.items" as pkg_items {
+abstract class Item <<Item>> {
+-id: String
+-name: String
+-description: String
+-shopPrice: int
+-spriteKey: String
+
+
+    #Item(id: String, name: String, description: String, shopPrice: int, spriteKey: String)
+    +{abstract} apply(model: GameModel): void
+    +getId(): String
+    +getName(): String
+    +getDescription(): String
+    +getShopPrice(): int
+    +getSpriteKey(): String
+}
+
+class HealingItem <<Item>> {
+    +HealingItem()
+    +apply(model: GameModel): void
+}
+
+class KeyItem <<Item>> {
+    +KeyItem()
+    +apply(model: GameModel): void
+}
+
+class ShieldItem <<Item>> {
+    +ShieldItem()
+    +apply(model: GameModel): void
+}
+
+class LifeUpItem <<Item>> {
+    +LifeUpItem()
+    +apply(model: GameModel): void
+}
+
+class SpeedBoostItem <<Item>> {
+    +SpeedBoostItem()
+    +apply(model: GameModel): void
+}
+
+class Inventory <<Model>> {
+    -items: Map<String, Integer>
+    -selectedItemId: String
+
+    +addItem(itemId: String, amount: int): void
+    +consumeItem(itemId: String, amount: int): boolean
+    +contains(itemId: String): boolean
+    +count(itemId: String): int
+    +selectItem(itemId: String): void
+    +getSelectedItemId(): Optional<String>
+    +asMap(): Map<String, Integer>
+    +streamItems(): Stream<String>
+}
+
+class ItemFactory <<Factory>> {
+    +createItem(code: char): Item
+    +createById(id: String): Item
+    +createShopItems(): List<Item>
+}
+
+
+}
+
+package "jzelda.levels" as pkg_levels {
+enum TileType {
+FLOOR
+WALL
+EXIT
++isBlocked(): boolean
+}
+
+
+class Level <<Model>> {
+    -id: int
+    -name: String
+    -tiles: TileType[][]
+    -enemies: List<Enemy>
+    -itemDrops: List<ItemDrop>
+    -rupees: List<RupeePickup>
+    -projectiles: List<Projectile>
+    -startX: double
+    -startY: double
+    -exitBounds: Rectangle2D.Double
+    -requiresKey: boolean
+    -completed: boolean
+
+    +getId(): int
+    +getName(): String
+    +getTile(col: int, row: int): TileType
+    +isBlocked(rectangle: Rectangle2D): boolean
+    +getEnemies(): List<Enemy>
+    +activeEnemies(): Stream<Enemy>
+    +countActiveEnemies(): long
+    +getItemDrops(): List<ItemDrop>
+    +activeItemDrops(): Stream<ItemDrop>
+    +getRupees(): List<RupeePickup>
+    +activeRupees(): Stream<RupeePickup>
+    +getProjectiles(): List<Projectile>
+    +addProjectile(projectile: Projectile): void
+    +removeInactiveProjectiles(): void
+    +getStartX(): double
+    +getStartY(): double
+    +getExitBounds(): Rectangle2D.Double
+    +requiresKey(): boolean
+    +isCompleted(): boolean
+    +markCompleted(): void
+    +allEnemiesDefeated(): boolean
+}
+
+class LevelManager <<Model>> {
+    -levelFactory: LevelFactory
+    -levels: List<Level>
+    -currentIndex: int
+
+    +LevelManager(levelFactory: LevelFactory)
+    +reloadCampaign(): void
+    +reloadCurrentLevel(): void
+    +loadLevel(number: int): Level
+    +getCurrentLevel(): Level
+    +getLevels(): List<Level>
+    +getCurrentIndex(): int
+    +getCurrentNumber(): int
+    +nextLevel(): boolean
+    +isLastLevel(): boolean
+    +allLevelsCompleted(): boolean
+}
+
+class LevelFactory <<Factory>> {
+    -resources: ResourceManager
+    -mapLoader: MapLoader
+    -entityFactory: EntityFactory
+    -itemFactory: ItemFactory
+
+    +LevelFactory(resources: ResourceManager)
+    +createLevel(id: int): Level
+    +createCampaign(): List<Level>
+}
+
+class MapLoader <<Factory>> {
+    -resources: ResourceManager
+
+    +loadMap(filename: String): List<String>
+    +parseTiles(lines: List<String>): TileType[][]
+    +findPlayerStart(lines: List<String>): Point
+    +findExit(lines: List<String>): Rectangle2D.Double
+    +streamMapFiles(): Stream<String>
+}
+
+class ItemDrop <<Model>> {
+    -item: Item
+    -x: double
+    -y: double
+    -collected: boolean
+
+    +ItemDrop(item: Item, x: double, y: double)
+    +getItem(): Item
+    +getX(): double
+    +getY(): double
+    +getBounds(): Rectangle2D.Double
+    +isCollected(): boolean
+    +collect(): void
+}
+
+class RupeePickup <<Model>> {
+    -x: double
+    -y: double
+    -value: int
+    -collected: boolean
+
+    +RupeePickup(x: double, y: double, value: int)
+    +getX(): double
+    +getY(): double
+    +getValue(): int
+    +getBounds(): Rectangle2D.Double
+    +isCollected(): boolean
+    +collect(): void
+}
+
+
+}
+
+package "jzelda.shop" as pkg_shop {
+class Shop <<Model>> {
+-offers: List<ShopOffer>
+
+
+    +Shop()
+    +getOffers(): List<ShopOffer>
+    +affordableOffers(rupees: int): List<ShopOffer>
+    +buyItem(model: GameModel, number: int): Optional<ShopOffer>
+    +purchase(model: GameModel, number: int): Optional<ShopOffer>
+}
+
+class ShopOffer <<Model>> {
+    -label: String
+    -price: int
+    -itemSupplier: Supplier<Item>
+
+    +ShopOffer(label: String, price: int, itemSupplier: Supplier<Item>)
+    +getLabel(): String
+    +getPrice(): int
+    +createItem(): Item
+}
+
+
+}
+
+package "jzelda.persistence" as pkg_persistence {
+class Profile <<Model>> {
+-nickname: String
+-avatar: String
+-gamesPlayed: int
+-gamesWon: int
+-gamesLost: int
+-bestScore: int
+
+
+    +Profile(nickname: String, avatar: String)
+    +getNickname(): String
+    +getAvatar(): String
+    +setAvatar(avatar: String): void
+    +getGamesPlayed(): int
+    +getGamesWon(): int
+    +getGamesLost(): int
+    +getBestScore(): int
+    +recordResult(won: boolean, score: int): void
+    +getWinRate(): double
+    +toStorageRow(): String
+    +{static} fromStorageRow(row: String): Profile
+}
+
+class ProfileManager <<Model>> {
+    -repository: ProfileRepository
+    -profiles: List<Profile>
+    -currentProfile: Profile
+
+    +ProfileManager(repository: ProfileRepository)
+    +load(): void
+    +save(): void
+    +createProfile(nickname: String, avatar: String): Profile
+    +selectByIndex(index: int): Profile
+    +selectByNickname(nickname: String): Optional<Profile>
+    +findByNickname(nickname: String): Optional<Profile>
+    +getProfilesSorted(): List<Profile>
+    +getProfiles(): List<Profile>
+    +getCurrentProfile(): Profile
+    +calculateTotalGames(): int
+}
+
+interface ProfileRepository <<Repository>> {
+    +loadProfiles(): List<Profile>
+    +saveProfiles(profiles: List<Profile>): void
+}
+
+class FileProfileRepository <<Repository>> {
+    -file: Path
+
+    +FileProfileRepository()
+    +FileProfileRepository(file: Path)
+    +loadProfiles(): List<Profile>
+    +saveProfiles(profiles: List<Profile>): void
+}
+
+class ScoreEntry <<Model>> {
+    -nickname: String
+    -score: int
+    -levelReached: int
+    -victory: boolean
+    -dateTime: LocalDateTime
+
+    +ScoreEntry(nickname: String, score: int, levelReached: int, victory: boolean, dateTime: LocalDateTime)
+    +getNickname(): String
+    +getScore(): int
+    +getLevelReached(): int
+    +isVictory(): boolean
+    +getDateTime(): LocalDateTime
+    +toStorageRow(): String
+    +{static} fromStorageRow(row: String): ScoreEntry
+}
+
+class Leaderboard <<Model>> {
+    -repository: LeaderboardRepository
+    -entries: List<ScoreEntry>
+
+    +Leaderboard(repository: LeaderboardRepository)
+    +load(): void
+    +save(): void
+    +addEntry(nickname: String, score: int, levelReached: int, victory: boolean): void
+    +sortScores(): List<ScoreEntry>
+    +topScores(limit: int): List<ScoreEntry>
+    +bestScore(): int
+    +getEntries(): List<ScoreEntry>
+}
+
+interface LeaderboardRepository <<Repository>> {
+    +loadEntries(): List<ScoreEntry>
+    +saveEntries(entries: List<ScoreEntry>): void
+}
+
+class FileLeaderboardRepository <<Repository>> {
+    -file: Path
+
+    +FileLeaderboardRepository()
+    +FileLeaderboardRepository(file: Path)
+    +loadEntries(): List<ScoreEntry>
+    +saveEntries(entries: List<ScoreEntry>): void
+}
+
+class PersistenceFacade <<Facade>> {
+    -profileManager: ProfileManager
+    -leaderboard: Leaderboard
+
+    +PersistenceFacade(profileManager: ProfileManager, leaderboard: Leaderboard)
+    +loadProfiles(): List<Profile>
+    +saveProfile(profile: Profile): void
+    +saveProfiles(profiles: List<Profile>): void
+    +loadLeaderboard(): List<ScoreEntry>
+    +saveLeaderboard(entries: List<ScoreEntry>): void
+    +recordResult(profile: Profile, score: int, levelReached: int, victory: boolean): void
+}
+
+
+}
+
+package "jzelda.audio" as pkg_audio {
+class AudioManager <<Singleton>> {
+-{static} instance: AudioManager
+-volume: float
+-activeClips: List<Clip>
+
+
+    -AudioManager()
+    +{static} getInstance(): AudioManager
+    +play(filename: String): void
+    +playEffect(effectName: String): void
+    +setVolume(volume: float): void
+    +getVolume(): float
+    -openClip(filename: String): Clip
+    -applyVolume(clip: Clip): void
+}
+
+
+}
+
+package "jzelda.resources" as pkg_resources {
+class ResourceManager <<Singleton>> {
+-{static} instance: ResourceManager
+-basePath: Path
+-spriteCache: Map<String, Image>
+-spriteManager: SpriteManager
+-mapLoader: MapLoader
+
+
+    -ResourceManager()
+    +{static} getInstance(): ResourceManager
+    +loadSprite(key: String): Image
+    +getSprite(key: String): Image
+    +loadMapLines(filename: String): List<String>
+    +listMapFiles(): List<String>
+    +resolve(first: String, more: String...): Path
+}
+
+class SpriteManager <<Singleton>> {
+    -spriteCache: Map<String, Image>
+    -imageRoot: Path
+
+    +getSprite(key: String): Image
+    +loadSprite(key: String): Image
+    +loadSpriteSheet(filename: String): BufferedImage
+    +createPlaceholder(key: String): Image
+    +clearCache(): void
+}
+
+
+}
+
+package "java.swing.awt.sound.io" as pkg_external {
+class JFrame <<Swing>>
+class JPanel <<Swing>>
+interface KeyListener <<Swing>>
+interface ActionListener <<Swing>>
+class Timer <<Swing>>
+class ActionEvent <<Swing>>
+class KeyEvent <<Swing>>
+class Graphics <<AWT>>
+class Graphics2D <<AWT>>
+class Color <<AWT>>
+class Image <<AWT>>
+class BufferedImage <<AWT>>
+class Point <<AWT>>
+class "Rectangle2D.Double" as Rectangle2DDouble <<AWT>>
+class Rectangle2D <<AWT>>
+class Clip <<Sound>>
+class Path <<IO>>
+class LocalDateTime <<Time>>
+interface "Stream<T>" as StreamT <<Java>>
+interface "Supplier<T>" as SupplierT <<Java>>
+class Optional <<Java>>
+}
+
+JZelda ..> GameLauncher : main() avvia
+GameLauncher ..> ResourceManager : getInstance()
+GameLauncher ..> AudioManager : getInstance()
+GameLauncher ..> FileProfileRepository : crea DAO
+GameLauncher ..> FileLeaderboardRepository : crea DAO
+GameLauncher ..> ProfileManager : crea
+GameLauncher ..> Leaderboard : crea
+GameLauncher ..> GameFacade : crea
+GameLauncher ..> GameModel : crea Model
+GameLauncher ..> GameView : crea View
+GameLauncher ..> GameController : crea Controller
+GameLauncher ..> GameObserver : registra View
+
+GameController "1" --> "1" GameModel : aggiorna / invia comandi
+GameController "1" --> "1" GameView : prompt profilo / focus
+GameController "1" *-- "1" GameLoop : timer loop
+GameController "1" o-- "0..*" InputCommand : crea
+GameController ..|> KeyListener
+GameController ..|> ActionListener
+GameLoop "1" *-- "1" Timer
+GameController ..> GameConfig : FRAME_DELAY_MS
+
+GameView --|> JFrame
+GamePanel --|> JPanel
+GameView "1" *-- "1" GamePanel : contiene
+GameView "1" --> "1" GameModel : lettura stato
+GamePanel "1" --> "1" GameModel : render read-only
+GamePanel "1" --> "1" ResourceManager : sprite
+GamePanel "1" --> "1" AnimationManager : frame animati
+GamePanel ..> RetroPalette : colori
+GamePanel ..> Graphics2D
+GamePanel ..> GameConfig
+
+AbstractObservableModel ..|> GameObservable
+GameModel --|> AbstractObservableModel
+GameView ..|> GameObserver
+AbstractObservableModel "1" o-- "0..*" GameObserver : observers
+GameObservable ..> GameObserver : add/remove
+GameModel ..> ModelEvent : notifyObservers()
+GameObserver ..> ModelEvent : onModelChanged(event)
+ModelEvent "1" --> "1" GameModel : source
+
+GameModel "1" *-- "1" Player : giocatore
+GameModel "1" *-- "1" LevelManager : progressione 8 livelli
+GameModel "1" *-- "1" Shop : shop separato
+GameModel "1" o-- "0..*" VisualEffect : effetti speciali
+GameModel "1" --> "1" GameFacade : risorse/audio/persistenza
+GameModel "1" o-- "1" GameState : currentState
+GameModel "1" *-- "1..*" GameState : stati registrati
+GameModel ..> CollisionManager : collisioni
+GameModel ..> InputCommand : handleCommand()
+GameModel ..> Direction : movimento
+GameModel ..> Projectile : spawnProjectile()
+GameModel ..> Profile : startNewGame()
+GameModel ..> GameConfig : costanti
+
+GameState <|.. MenuState
+GameState <|.. ProfileSelectState
+GameState <|.. PlayingState
+GameState <|.. PausedState
+GameState <|.. ShopState
+GameState <|.. GameOverState
+GameState <|.. LeaderboardState
+GameState <|.. VictoryState
+GameState ..> GameModel : enter/update
+GameState ..> InputCommand : handleCommand
+PlayingState ..> GameModel : updateGameplay()
+ShopState ..> Shop : acquisto
+GameOverState ..> GameModel : continueRun()
+VictoryState ..> GameModel : finishRun(true)
+
+InputCommand <|.. MoveCommand
+InputCommand <|.. AttackCommand
+InputCommand <|.. InteractCommand
+InputCommand <|.. PauseCommand
+InputCommand <|.. ContinueCommand
+InputCommand <|.. ConfirmCommand
+InputCommand <|.. BackCommand
+InputCommand <|.. NavigateMenuCommand
+InputCommand <|.. NumberCommand
+InputCommand ..> GameModel : execute(model)
+MoveCommand "1" --> "1" Direction
+NavigateMenuCommand ..> GameModel : navigateMenu()
+NumberCommand ..> GameModel : selectNumber()
+
+Entity <|-- Player
+Entity <|-- Enemy
+Entity <|-- Projectile
+Enemy <|-- PatrolEnemy
+Enemy <|-- ShooterEnemy
+Player "1" *-- "1" Inventory : possiede
+Player "1" --> "1" Direction : facing
+Entity ..> Rectangle2DDouble : bounds
+Enemy "1" o-- "1" EnemyStrategy : comportamento
+EnemyStrategy <|.. ChasePatrolBehavior
+EnemyStrategy <|.. RandomShooterBehavior
+EnemyStrategy ..> GameModel : update()
+PatrolEnemy ..> ChasePatrolBehavior : usa
+ShooterEnemy ..> RandomShooterBehavior : usa
+RandomShooterBehavior ..> Projectile : spara
+EntityFactory ..> Player : crea
+EntityFactory ..> PatrolEnemy : crea
+EntityFactory ..> ShooterEnemy : crea
+EntityFactory ..> Projectile : crea
+
+Item <|-- HealingItem
+Item <|-- KeyItem
+Item <|-- ShieldItem
+Item <|-- LifeUpItem
+Item <|-- SpeedBoostItem
+Item ..> GameModel : apply(model)
+HealingItem ..> Player : heal()
+KeyItem ..> Inventory : add key
+ShieldItem ..> Player : activateShield()
+LifeUpItem ..> Player : increaseMaxHealth()
+SpeedBoostItem ..> Player : activateSpeedBoost()
+Inventory "1" o-- "0..*" Item : item/quantità
+ItemFactory ..> HealingItem : crea
+ItemFactory ..> KeyItem : crea
+ItemFactory ..> ShieldItem : crea
+ItemFactory ..> LifeUpItem : crea
+ItemFactory ..> SpeedBoostItem : crea
+
+LevelManager "1" *-- "8" Level : campagna
+LevelManager "1" --> "1" LevelFactory : carica
+LevelFactory "1" --> "1" ResourceManager : resources/maps
+LevelFactory "1" --> "1" MapLoader : parse mappe
+LevelFactory "1" --> "1" EntityFactory : nemici
+LevelFactory "1" --> "1" ItemFactory : item
+MapLoader "1" --> "1" ResourceManager : loadMapLines()
+MapLoader ..> TileType : parseTiles()
+Level "1" *-- "20x14" TileType : tiles
+Level "1" *-- "0..*" Enemy : nemici
+Level "1" *-- "0..*" ItemDrop : item drop
+Level "1" *-- "0..*" RupeePickup : rupie
+Level "1" *-- "0..*" Projectile : proiettili
+Level ..> StreamT : activeEnemies()/activeRupees()
+Level ..> Rectangle2DDouble : exit/bounds
+ItemDrop "1" *-- "1" Item
+CollisionManager ..> Level
+CollisionManager ..> Entity
+CollisionManager ..> Player
+CollisionManager ..> Enemy
+
+Shop "1" *-- "0..*" ShopOffer : offerte
+Shop ..> Player : spende rupie
+Shop ..> GameModel : purchase(model)
+Shop ..> StreamT : affordableOffers()
+ShopOffer "1" --> "1" SupplierT : itemSupplier
+ShopOffer ..> Item : createItem()
+
+ProfileManager "1" --> "1" ProfileRepository : DAO
+ProfileManager "1" o-- "0..*" Profile : gestisce
+ProfileManager "1" --> "0..1" Profile : current
+FileProfileRepository ..|> ProfileRepository
+FileProfileRepository ..> Path
+Profile ..> StreamT : statistiche aggregate
+Leaderboard "1" --> "1" LeaderboardRepository : DAO
+Leaderboard "1" *-- "0..*" ScoreEntry : risultati
+Leaderboard ..> StreamT : filter/sorted/limit/collect
+FileLeaderboardRepository ..|> LeaderboardRepository
+FileLeaderboardRepository ..> Path
+ScoreEntry ..> LocalDateTime
+PersistenceFacade "1" *-- "1" ProfileManager
+PersistenceFacade "1" *-- "1" Leaderboard
+PersistenceFacade ..> ProfileRepository
+PersistenceFacade ..> LeaderboardRepository
+
+GameFacade "1" *-- "1" ResourceManager
+GameFacade "1" *-- "1" AudioManager
+GameFacade "1" *-- "1" ProfileManager
+GameFacade "1" *-- "1" Leaderboard
+GameFacade "1" *-- "1" PersistenceFacade
+
+AudioManager "1" o-- "0..*" Clip : active clips
+AudioManager ..> Path
+ResourceManager "1" *-- "1" SpriteManager
+ResourceManager "1" *-- "1" MapLoader
+ResourceManager ..> Image
+ResourceManager ..> Path
+SpriteManager ..> Image
+SpriteManager ..> BufferedImage
+AnimationManager ..> Entity
+AnimationManager ..> SpriteManager
+RetroPalette ..> Color
+
+note as N_MVC
+<<MVC>>
+GameModel mantiene stato, regole, livelli,
+profilo, shop, classifica e progressione.
+GameView/GamePanel rappresentano solo la GUI Swing.
+GameController/GameLoop traducono input e timer
+in Command e update del Model.
+end note
+N_MVC .. GameModel
+N_MVC .. GameView
+N_MVC .. GameController
+
+note as N_OBSERVER
+<<Observer>>
+GameModel estende AbstractObservableModel.
+La View implementa GameObserver/ModelObserver.
+Ogni cambiamento del Model genera ModelEvent.
+end note
+N_OBSERVER .. GameObservable
+N_OBSERVER .. GameObserver
+N_OBSERVER .. ModelEvent
+
+note as N_SINGLETON
+<<Singleton>>
+AudioManager e ResourceManager hanno istanza unica
+e accesso globale controllato tramite getInstance().
+end note
+N_SINGLETON .. AudioManager
+N_SINGLETON .. ResourceManager
+
+note as N_FACTORY
+<<Factory Method>>
+LevelFactory costruisce gli 8 livelli da mappe.
+EntityFactory crea Player, nemici e proiettili.
+ItemFactory crea item da codice mappa o id.
+end note
+N_FACTORY .. LevelFactory
+N_FACTORY .. EntityFactory
+N_FACTORY .. ItemFactory
+
+note as N_STRATEGY
+<<Strategy>>
+Enemy delega il movimento/attacco a EnemyStrategy.
+PatrolEnemy usa ChasePatrolBehavior.
+ShooterEnemy usa RandomShooterBehavior.
+end note
+N_STRATEGY .. Enemy
+N_STRATEGY .. EnemyStrategy
+
+note as N_STATE
+<<State>>
+GameState isola comportamento di menu, gioco,
+pausa, shop, game over, classifica e vittoria.
+GameModel conserva lo stato corrente.
+end note
+N_STATE .. GameState
+N_STATE .. GameModel
+
+note as N_COMMAND
+<<Command>>
+Ogni tasto viene trasformato in InputCommand.
+Il controller non modifica direttamente le regole:
+invoca execute(model).
+end note
+N_COMMAND .. InputCommand
+N_COMMAND .. GameController
+
+note as N_REPOSITORY
+<<Repository/DAO>>
+ProfileRepository e LeaderboardRepository
+separano persistenza CSV da logica di dominio.
+end note
+N_REPOSITORY .. ProfileRepository
+N_REPOSITORY .. LeaderboardRepository
+
+note as N_FACADE
+<<Facade>>
+GameFacade e PersistenceFacade semplificano
+accesso a risorse, audio, profili e classifica.
+end note
+N_FACADE .. GameFacade
+N_FACADE .. PersistenceFacade
+
+note bottom of LevelManager
+Campagna: 8 Level giocabili distinti.
+Lo Shop è gestito come stato separato
+e non viene contato tra gli 8 livelli.
+end note
+
+note bottom of Leaderboard
+Uso reale di Stream<T>:
+filter, sorted, limit, collect
+per classifica e risultati migliori.
+end note
+
+note bottom of ProfileManager
+Profili persistenti:
+nickname, avatar, partite giocate,
+vittorie, sconfitte e miglior punteggio.
+end note
+
+note bottom of Shop
+Le rupie raccolte nei Level vengono
+spese nello Shop per Item con effetti concreti.
+end note
+
+note bottom of GamePanel
+Rendering Swing:
+HUD, mappa, sprite, animazioni,
+effetti raccolta/danno, overlay menu,
+game over e vittoria.
+end note
+
+@enduml

@@ -1,0 +1,31 @@
+﻿# Compilazione Java / Eclipse
+bin/
+*.class
+
+# Output generati
+out/
+build/
+target/
+dist/
+
+# IDE locali non necessari
+.vscode/
+.idea/
+
+# File temporanei
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
+
+# Archivi generati
+*.zip
+*.rar
+*.7z
+
+# Javadoc generata - lascia commentato se vuoi pushare doc/
+# doc/
+
+# Salvataggi runtime - lascia commentato se vuoi pushare i CSV iniziali
+# resources/profiles/profiles.csv
+# resources/profiles/leaderboard.csv

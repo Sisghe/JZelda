@@ -1,0 +1,16 @@
+unnamed package
+jzelda.app
+jzelda.audio
+jzelda.controller
+jzelda.controller.commands
+jzelda.entities
+jzelda.entities.behaviors
+jzelda.items
+jzelda.levels
+jzelda.model
+jzelda.patterns
+jzelda.persistence
+jzelda.resources
+jzelda.shop
+jzelda.states
+jzelda.view

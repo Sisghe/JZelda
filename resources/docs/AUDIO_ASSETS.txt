@@ -1,0 +1,16 @@
+JZelda audio placeholders
+=========================
+
+I file WAV in resources/audio sono campioni originali generati proceduralmente per questa consegna con una sinusoide mono PCM. Non provengono da librerie esterne e non copiano audio di videogiochi commerciali.
+
+Elenco:
+- attack.wav: attacco
+- hit.wav: danno / cura breve
+- rupee.wav: raccolta rupia
+- purchase.wav: acquisto shop
+- gameover.wav: game over
+- levelcomplete.wav: completamento livello
+- victory.wav: vittoria
+- menu.wav: feedback menu predisposto
+
+La classe jzelda.audio.AudioManager usa javax.sound.sampled.AudioInputStream e Clip con BufferedInputStream.
