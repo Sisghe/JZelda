@@ -6,9 +6,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.swing.Timer;
-
 import jzelda.controller.commands.AttackCommand;
 import jzelda.controller.commands.BackCommand;
 import jzelda.controller.commands.ConfirmCommand;
@@ -121,6 +119,12 @@ public class GameController implements KeyListener, ActionListener {
         }
         if (code == KeyEvent.VK_E) {
             return new InteractCommand();
+        }
+        if (code == KeyEvent.VK_M) {
+            return model.getStateName().equals("PLAYING") ? new InputCommand() {
+                @Override public void execute(GameModel gameModel) { gameModel.toggleMinimap(); }
+                @Override public String getName() { return "TOGGLE_MINIMAP"; }
+            } : null;
         }
         if (code == KeyEvent.VK_ENTER) {
             return new ConfirmCommand();

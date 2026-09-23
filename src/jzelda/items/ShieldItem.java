@@ -13,7 +13,7 @@ public class ShieldItem extends Item {
 
     @Override
     public void apply(GameModel model) {
-        model.getPlayer().activateShield(12_000);
+        model.getPlayer().equipShield();
         model.getPlayer().addInventory("shield", 1);
         model.addEffect("scudo", model.getPlayer().getX(), model.getPlayer().getY());
         model.getFacade().audio().playEffect("purchase.wav");

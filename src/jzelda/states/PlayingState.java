@@ -26,6 +26,11 @@ public class PlayingState implements GameState {
             command.execute(model);
         } else if (command instanceof PauseCommand || command instanceof BackCommand) {
             model.changeState("PAUSED");
+        } else {
+            // Execute any other input commands (e.g. anonymous toggle-minimap command)
+            if (command != null) {
+                command.execute(model);
+            }
         }
     }
 

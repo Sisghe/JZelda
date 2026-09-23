@@ -1,4 +1,4 @@
-﻿# Compilazione Java / Eclipse
+# Compilazione Java / Eclipse
 bin/
 *.class
 
@@ -29,3 +29,10 @@ Thumbs.db
 # Salvataggi runtime - lascia commentato se vuoi pushare i CSV iniziali
 # resources/profiles/profiles.csv
 # resources/profiles/leaderboard.csv
+.continue/
+*.jar
+*.bak
+sources.txt
+all_java_files.txt
+reaper_current_diff.txt
+DUNGEON_DEBUG_CONTEXT.md

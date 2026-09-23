@@ -1,0 +1,28 @@
+ASSET GRAFICI - JZELDA
+=======================
+
+Gli sprite sheet presenti nelle cartelle resources/images/Link e
+resources/images/Enemies sono stati scaricati su indicazione del professore
+per l'uso didattico in questo progetto.
+
+Sprite finali effettivamente caricati dal gioco:
+- resources/images/player0.png
+- resources/images/player1.png
+- resources/images/enemy_patrol0.png
+- resources/images/enemy_patrol1.png
+- resources/images/enemy_shooter0.png
+- resources/images/enemy_shooter1.png
+
+Questi sei file sono stati sostituiti con frame 16x16 estratti dagli sprite
+sheet sorgente. Lo sfondo verde dei fogli è stato convertito in trasparenza
+dalla utility originale jzelda.resources.SpriteSheetExtractor. Gli sprite
+degli item restano nei file item_heal.png, item_key.png, item_life.png,
+item_shield.png e item_speed.png.
+
+Il codice e il caricamento runtime usano esclusivamente nomi neutri come
+player, enemy_patrol, enemy_shooter e item. I nomi originali restano soltanto
+nei percorsi degli asset sorgente forniti per la consegna.
+
+Non sono stati copiati codice, classi o implementazioni dal progetto
+zelda-in-java-master.zip. Gli asset qui descritti sono usati esclusivamente
+come risorse grafiche della consegna didattica.

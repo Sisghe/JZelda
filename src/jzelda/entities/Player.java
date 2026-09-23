@@ -4,25 +4,38 @@ import java.awt.geom.Rectangle2D;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import jzelda.model.GameConfig;
 
 /**
- * Player model object. It stores combat stats, inventory, animation counters and
- * temporary status effects. Input and rendering are handled elsewhere.
+ * Player model object. It stores combat stats, inventory, animation counters,
+ * equipped weapon state and temporary status effects. Input and rendering are
+ * handled elsewhere.
  */
 public class Player extends Entity {
     private static final int BASE_SPEED = 4;
+    private static final int UNARMED_ATTACK_REACH = 18;
+    private static final int SWORD_ATTACK_REACH = 30;
+    private static final int UNARMED_ATTACK_DAMAGE = 1;
+    private static final int SWORD_ATTACK_DAMAGE = 2;
+
     private int maxHealth = 6;
     private int lives = GameConfig.STARTING_LIVES;
     private int rupees;
     private Direction direction = Direction.DOWN;
+    private boolean swordEquipped;
     private long attackCooldownMs;
     private long invulnerableMs;
-    private long shieldMs;
+    private int shieldBlocksRemaining;
     private long speedBoostMs;
     private long frameClockMs;
     private final Map<String, Integer> inventory = new LinkedHashMap<>();
+
+    /** Pixel di margine orizzontale usati dalla hitbox di movimento. */
+    private static final int COLLISION_LEFT_INSET = 4;
+    private static final int COLLISION_RIGHT_INSET = 4;
+    /** Margini verticali: lascia visibili cappello/capo e limita l'invasione del muro con il corpo. */
+    private static final int COLLISION_TOP_INSET = 20;
+    private static final int COLLISION_BOTTOM_INSET = 0;
 
     /**
      * Creates a player at the given position.
@@ -42,14 +55,11 @@ public class Player extends Entity {
     public void updateTimers(long deltaMs) {
         attackCooldownMs = Math.max(0, attackCooldownMs - deltaMs);
         invulnerableMs = Math.max(0, invulnerableMs - deltaMs);
-        shieldMs = Math.max(0, shieldMs - deltaMs);
         speedBoostMs = Math.max(0, speedBoostMs - deltaMs);
         frameClockMs += Math.max(0, deltaMs);
     }
 
-    /**
-     * Restores all health points and clears temporary damage immunity.
-     */
+    /** Restores all health points and clears temporary damage immunity. */
     public void restoreFullHealth() {
         setHealth(maxHealth);
         invulnerableMs = 0;
@@ -90,9 +100,7 @@ public class Player extends Entity {
         this.lives = Math.max(0, lives);
     }
 
-    /**
-     * Decrements life count when the player dies.
-     */
+    /** Decrements life count when the player dies. */
     public void loseLife() {
         lives = Math.max(0, lives - 1);
     }
@@ -147,6 +155,24 @@ public class Player extends Entity {
         }
     }
 
+    /** Returns the short interaction area immediately in front of the player. */
+    public Rectangle2D.Double getInteractionBounds() {
+        Rectangle2D.Double body = getCollisionBounds();
+        if (direction == Direction.UP) {
+            return new Rectangle2D.Double(body.x, body.y - 8, body.width, 8);
+        }
+        if (direction == Direction.DOWN) {
+            return new Rectangle2D.Double(body.x, body.getMaxY(), body.width, 8);
+        }
+        if (direction == Direction.LEFT) {
+            return new Rectangle2D.Double(body.x - 8, body.y, 8, body.height);
+        }
+        if (direction == Direction.RIGHT) {
+            return new Rectangle2D.Double(body.getMaxX(), body.y, 8, body.height);
+        }
+        return body;
+    }
+
     /**
      * @return current speed after temporary boosts
      */
@@ -161,9 +187,7 @@ public class Player extends Entity {
         return attackCooldownMs <= 0;
     }
 
-    /**
-     * Starts the attack cooldown.
-     */
+    /** Starts the attack cooldown. */
     public void resetAttackCooldown() {
         attackCooldownMs = 280;
     }
@@ -184,11 +208,9 @@ public class Player extends Entity {
         invulnerableMs = Math.max(invulnerableMs, durationMs);
     }
 
-    /**
-     * @return {@code true} if a shield effect is active
-     */
+    /** @return {@code true} if the permanent shield still has blocks remaining */
     public boolean hasShield() {
-        return shieldMs > 0;
+        return shieldBlocksRemaining > 0;
     }
 
     /**
@@ -196,8 +218,19 @@ public class Player extends Entity {
      *
      * @param durationMs duration in milliseconds
      */
-    public void activateShield(long durationMs) {
-        shieldMs = Math.max(shieldMs, durationMs);
+    public void equipShield() {
+        if (shieldBlocksRemaining <= 0) {
+            shieldBlocksRemaining = 3;
+        }
+    }
+
+    /** Consumes one shield block when the threat is directly in front. */
+    public boolean parryHit(Direction sourceDirection) {
+        if (!hasShield() || sourceDirection == null || sourceDirection != direction) {
+            return false;
+        }
+        shieldBlocksRemaining--;
+        return true;
     }
 
     /**
@@ -207,6 +240,27 @@ public class Player extends Entity {
      */
     public void activateSpeedBoost(long durationMs) {
         speedBoostMs = Math.max(speedBoostMs, durationMs);
+    }
+
+    /**
+     * Equips the sword permanently for the current run.
+     */
+    public void equipSword() {
+        swordEquipped = true;
+    }
+
+    /**
+     * @return {@code true} when the sword has been found and equipped
+     */
+    public boolean hasSwordEquipped() {
+        return swordEquipped;
+    }
+
+    /**
+     * @return attack damage based on the currently equipped weapon
+     */
+    public int getAttackDamage() {
+        return swordEquipped ? SWORD_ATTACK_DAMAGE : UNARMED_ATTACK_DAMAGE;
     }
 
     /**
@@ -254,22 +308,35 @@ public class Player extends Entity {
     }
 
     /**
-     * @return rectangle representing the current sword attack
+     * {@inheritDoc}
+     */
+    @Override
+    public Rectangle2D.Double getCollisionBounds() {
+        return new Rectangle2D.Double(
+                getX() + COLLISION_LEFT_INSET,
+                getY() + COLLISION_TOP_INSET,
+                getWidth() - COLLISION_LEFT_INSET - COLLISION_RIGHT_INSET,
+                getHeight() - COLLISION_TOP_INSET - COLLISION_BOTTOM_INSET);
+    }
+
+    /**
+     * @return rectangle representing the current attack area
      */
     public Rectangle2D.Double getAttackBounds() {
-        int reach = 24;
-        Rectangle2D.Double body = getBounds();
-        switch (direction) {
-        case UP:
+        int reach = swordEquipped ? SWORD_ATTACK_REACH : UNARMED_ATTACK_REACH;
+        Rectangle2D.Double body = getCollisionBounds();
+        if (direction == Direction.UP) {
             return new Rectangle2D.Double(body.x, body.y - reach, body.width, reach);
-        case DOWN:
-            return new Rectangle2D.Double(body.x, body.y + body.height, body.width, reach);
-        case LEFT:
-            return new Rectangle2D.Double(body.x - reach, body.y, reach, body.height);
-        case RIGHT:
-            return new Rectangle2D.Double(body.x + body.width, body.y, reach, body.height);
-        default:
-            return new Rectangle2D.Double(body.x, body.y, body.width, body.height);
         }
+        if (direction == Direction.DOWN) {
+            return new Rectangle2D.Double(body.x, body.y + body.height, body.width, reach);
+        }
+        if (direction == Direction.LEFT) {
+            return new Rectangle2D.Double(body.x - reach, body.y, reach, body.height);
+        }
+        if (direction == Direction.RIGHT) {
+            return new Rectangle2D.Double(body.x + body.width, body.y, reach, body.height);
+        }
+        return new Rectangle2D.Double(body.x, body.y, body.width, body.height);
     }
 }

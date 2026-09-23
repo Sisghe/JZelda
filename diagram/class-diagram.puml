@@ -930,6 +930,11 @@ class ResourceManager <<Singleton>> {
     +resolve(first: String, more: String...): Path
 }
 
+class SpriteSheetExtractor <<Utility>> {
+    +{static} main(args: String[]): void
+    +{static} generateDefaultSprites(resources: Path): void
+}
+
 class SpriteManager <<Singleton>> {
     -spriteCache: Map<String, Image>
     -imageRoot: Path
@@ -1148,6 +1153,8 @@ ResourceManager "1" *-- "1" SpriteManager
 ResourceManager "1" *-- "1" MapLoader
 ResourceManager ..> Image
 ResourceManager ..> Path
+SpriteSheetExtractor ..> BufferedImage
+SpriteSheetExtractor ..> Path
 SpriteManager ..> Image
 SpriteManager ..> BufferedImage
 AnimationManager ..> Entity

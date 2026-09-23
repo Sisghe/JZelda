@@ -8,6 +8,8 @@ public enum TileType {
     FLOOR(false),
     /** Solid wall or obstacle. */
     WALL(true),
+    /** Closed door marker; it becomes an EXIT after its physical door opens. */
+    DOOR_LOCKED(true),
     /** Exit tile used to finish a level. */
     EXIT(false);
 

@@ -1,7 +1,6 @@
 package jzelda.entities.behaviors;
 
 import java.util.Random;
-
 import jzelda.entities.Enemy;
 import jzelda.entities.Player;
 import jzelda.entities.Projectile;
@@ -40,7 +39,7 @@ public class RandomShooterBehavior implements EnemyBehavior {
             model.spawnProjectile(new Projectile(enemy.getX() + 8, enemy.getY() + 8, vx / len * 4.0, vy / len * 4.0, 1));
         }
         if (enemy.getBounds().intersects(player.getBounds())) {
-            model.damagePlayer(enemy.getContactDamage(), "Colpo di creatura errante");
+            model.damagePlayer(enemy.getContactDamage(), "Colpo di creatura errante", model.directionFromPlayerTo(enemy));
         }
     }
 

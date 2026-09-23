@@ -44,4 +44,12 @@ public class Projectile extends Entity {
     public int getDamage() {
         return damage;
     }
+
+    public double getVelocityX() {
+        return dx;
+    }
+
+    public double getVelocityY() {
+        return dy;
+    }
 }

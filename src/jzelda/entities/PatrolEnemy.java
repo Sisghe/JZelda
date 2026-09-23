@@ -13,6 +13,7 @@ public class PatrolEnemy extends Enemy {
      * @param y y coordinate
      */
     public PatrolEnemy(double x, double y) {
-        super(x, y, 2, "enemy_patrol", new ChasePatrolBehavior());
+        // Use reaper sprite key; entity factory still creates PatrolEnemy for map code 'A'.
+        super(x, y, 2, "enemy_reaper", new ChasePatrolBehavior());
     }
 }

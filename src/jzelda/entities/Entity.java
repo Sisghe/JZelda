@@ -167,4 +167,25 @@ public abstract class Entity {
     public Rectangle2D.Double getBounds() {
         return new Rectangle2D.Double(x, y, width, height);
     }
+
+    /**
+     * Collision rectangle used by movement and interaction logic.
+     *
+     * @return rectangle in world coordinates
+     */
+    public Rectangle2D.Double getCollisionBounds() {
+        return getBounds();
+    }
+
+    /**
+     * Collision rectangle anchored to an arbitrary candidate position.
+     *
+     * @param candidateX candidate X
+     * @param candidateY candidate Y
+     * @return collision rectangle if the entity were at that coordinate
+     */
+    public Rectangle2D.Double getCollisionBounds(double candidateX, double candidateY) {
+        Rectangle2D.Double bounds = getCollisionBounds();
+        return new Rectangle2D.Double(candidateX + (bounds.x - x), candidateY + (bounds.y - y), bounds.width, bounds.height);
+    }
 }

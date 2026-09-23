@@ -1,11 +1,12 @@
 package jzelda.levels;
 
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
-
 import jzelda.entities.Enemy;
 import jzelda.entities.Projectile;
 import jzelda.model.GameConfig;
@@ -24,9 +25,11 @@ public class Level {
     private final List<Projectile> projectiles = new ArrayList<>();
     private final double startX;
     private final double startY;
-    private final Rectangle2D.Double exitBounds;
-    private final boolean requiresKey;
+    private final BufferedImage backgroundImage;
+    private final List<LevelExit> exits;
     private boolean completed;
+    private final Rectangle2D.Double legacyExitBounds;
+    private final boolean requiresLegacyKey;
 
     /**
      * Creates a level from parsed map data.
@@ -37,23 +40,27 @@ public class Level {
      * @param enemies enemies contained in the level
      * @param itemDrops item pickups contained in the level
      * @param rupees rupee pickups contained in the level
+     * @param backgroundImage cached background image for this level
      * @param startX player start x coordinate
      * @param startY player start y coordinate
      * @param exitBounds exit collision rectangle
      * @param requiresKey whether a key is required to complete the level
      */
     public Level(int id, String name, TileType[][] tiles, List<Enemy> enemies, List<ItemDrop> itemDrops,
-            List<RupeePickup> rupees, double startX, double startY, Rectangle2D.Double exitBounds, boolean requiresKey) {
+            List<RupeePickup> rupees, BufferedImage backgroundImage, double startX, double startY,
+            List<LevelExit> exits, Rectangle2D.Double legacyExitBounds, boolean requiresLegacyKey) {
         this.id = id;
         this.name = name;
         this.tiles = tiles;
         this.enemies = new ArrayList<>(enemies);
         this.itemDrops = new ArrayList<>(itemDrops);
         this.rupees = new ArrayList<>(rupees);
+        this.backgroundImage = backgroundImage;
         this.startX = startX;
         this.startY = startY;
-        this.exitBounds = exitBounds;
-        this.requiresKey = requiresKey;
+        this.exits = new ArrayList<>(exits == null ? List.of() : exits);
+        this.legacyExitBounds = legacyExitBounds;
+        this.requiresLegacyKey = requiresLegacyKey;
     }
 
     /**
@@ -91,14 +98,13 @@ public class Level {
      * @return {@code true} when any solid tile is touched
      */
     public boolean isBlocked(Rectangle2D rectangle) {
-        if (rectangle.getMinX() < 0 || rectangle.getMinY() < 0 || rectangle.getMaxX() >= GameConfig.PLAY_WIDTH
-                || rectangle.getMaxY() >= GameConfig.PLAY_HEIGHT) {
+        if (!GameConfig.isInsideRoom(rectangle)) {
             return true;
         }
-        int minCol = (int) Math.floor(rectangle.getMinX() / GameConfig.TILE_SIZE);
-        int maxCol = (int) Math.floor((rectangle.getMaxX() - 1) / GameConfig.TILE_SIZE);
-        int minRow = (int) Math.floor(rectangle.getMinY() / GameConfig.TILE_SIZE);
-        int maxRow = (int) Math.floor((rectangle.getMaxY() - 1) / GameConfig.TILE_SIZE);
+        int minCol = GameConfig.toTileColumn(rectangle.getMinX());
+        int maxCol = GameConfig.toTileColumn(rectangle.getMaxX() - 1);
+        int minRow = GameConfig.toTileRow(rectangle.getMinY());
+        int maxRow = GameConfig.toTileRow(rectangle.getMaxY() - 1);
         for (int row = minRow; row <= maxRow; row++) {
             for (int col = minCol; col <= maxCol; col++) {
                 if (getTile(col, row).isBlocked()) {
@@ -107,6 +113,28 @@ public class Level {
             }
         }
         return false;
+    }
+
+    /** Applies persistent door progress to this room's runtime tile matrix. */
+    public void applyDungeonProgress(DungeonProgress progress) {
+        if (progress == null) {
+            return;
+        }
+        for (LevelExit exit : exits) {
+            if (!exit.isInitiallyLocked() || !progress.isDoorOpen(exit.getDoorStateId())) {
+                continue;
+            }
+            Rectangle2D bounds = exit.getBounds();
+            for (int row = 0; row < tiles.length; row++) {
+                for (int col = 0; col < tiles[row].length; col++) {
+                    if (tiles[row][col] == TileType.DOOR_LOCKED
+                            && bounds.contains(GameConfig.toPlayX(col) + GameConfig.TILE_SIZE / 2.0,
+                                    GameConfig.toPlayY(row) + GameConfig.TILE_SIZE / 2.0)) {
+                        tiles[row][col] = TileType.EXIT;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -196,17 +224,53 @@ public class Level {
     }
 
     /**
-     * @return exit bounds
+     * @return immutable list of configured exits.
+     */
+    public List<LevelExit> getExits() {
+        return Collections.unmodifiableList(exits);
+    }
+
+    /**
+     * Returns the first exit matching the supplied id.
+     *
+     * @param id exit identifier
+     * @return matching exit
+     */
+    public Optional<LevelExit> findExitById(String id) {
+        return exits.stream().filter(exit -> exit.getId().equals(id)).findFirst();
+    }
+
+    /**
+     * Legacy compatibility accessor used by older single-exit transitions.
+     *
+     * @return legacy exit bounds if available, otherwise {@code null}
      */
     public Rectangle2D.Double getExitBounds() {
-        return exitBounds;
+        return legacyExitBounds;
+    }
+
+    /**
+     * @return level background image
+     */
+    public BufferedImage getBackgroundImage() {
+        return backgroundImage;
     }
 
     /**
      * @return {@code true} if the level exit requires a key
      */
     public boolean requiresKey() {
-        return requiresKey;
+        return requiresLegacyKey;
+    }
+
+    /**
+     * Returns the canonical level identifier used for graph navigation.
+     * Example: {@code level1}.
+     *
+     * @return canonical level id
+     */
+    public String getLevelId() {
+        return "level" + id;
     }
 
     /**
@@ -228,5 +292,12 @@ public class Level {
      */
     public boolean allEnemiesDefeated() {
         return enemies.stream().allMatch(enemy -> !enemy.isAlive());
+    }
+
+    /**
+     * @return {@code true} when the level is using the old single-exit completion pattern.
+     */
+    public boolean hasLegacyExits() {
+        return exits.stream().anyMatch(LevelExit::isLegacy);
     }
 }

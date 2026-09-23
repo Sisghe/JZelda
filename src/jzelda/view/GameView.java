@@ -1,11 +1,9 @@
 package jzelda.view;
 
 import java.awt.BorderLayout;
-
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.WindowConstants;
-
 import jzelda.model.GameModel;
 import jzelda.patterns.ModelEvent;
 import jzelda.patterns.ModelObserver;
@@ -24,15 +22,21 @@ public class GameView extends JFrame implements ModelObserver {
      * @param model model to display
      */
     public GameView(GameModel model) {
-        super("JZelda - Retro Adventure");
-        this.panel = new GamePanel(model);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-        add(panel, BorderLayout.CENTER);
-        pack();
-        setLocationRelativeTo(null);
-        setResizable(false);
-    }
+    super("JZelda - Retro Adventure");
+
+    this.panel = new GamePanel(model);
+
+    setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    setLayout(new BorderLayout());
+
+    setResizable(true);
+
+    add(panel, BorderLayout.CENTER);
+    pack();
+
+    setMinimumSize(getSize());
+    setLocationRelativeTo(null);
+}
 
     @Override
     public void onModelChanged(ModelEvent event) {

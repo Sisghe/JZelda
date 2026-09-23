@@ -36,4 +36,25 @@ public enum Direction {
     public int dy() {
         return dy;
     }
+
+    /**
+     * Returns the opposite direction on the same axis.
+     *
+     * @return opposite direction
+     */
+    public Direction opposite() {
+        if (this == UP) {
+            return DOWN;
+        }
+        if (this == DOWN) {
+            return UP;
+        }
+        if (this == LEFT) {
+            return RIGHT;
+        }
+        if (this == RIGHT) {
+            return LEFT;
+        }
+        return NONE;
+    }
 }

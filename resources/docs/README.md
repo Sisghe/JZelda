@@ -1,6 +1,6 @@
 # JZelda - Retro Adventure originale
 
-JZelda è un progetto Java Swing importabile in Eclipse. È ispirato alle convenzioni storiche degli action-adventure retrò a schermata singola, ma usa codice, sprite e audio originali generati per questa consegna. Non include asset, nomi, personaggi o marchi Nintendo.
+JZelda è un progetto Java Swing importabile in Eclipse, ispirato alle convenzioni storiche degli action-adventure retrò a schermata singola. Il protagonista e i nemici sono identificati nel codice con nomi neutri e appartengono all'universo originale del progetto JZelda.
 
 ## Avvio in Eclipse
 
@@ -44,9 +44,15 @@ Il gioco contiene 8 livelli giocabili e una bottega separata. Ogni livello ha un
 
 Gli stream sono usati in modo funzionale per filtrare nemici e pickup attivi, ordinare la classifica, selezionare offerte acquistabili, calcolare statistiche profilo, caricare livelli e listare mappe.
 
-## Audio e asset
+## Asset grafici
 
-Tutti gli sprite PNG in `resources/images` sono placeholder originali generati proceduralmente per questo progetto. I WAV in `resources/audio` sono beep originali generati per la consegna e non provengono da asset esterni. `AudioManager` usa `javax.sound.sampled.AudioInputStream`, `Clip` e `BufferedInputStream`, compatibili con JDK moderni.
+Il gioco carica tramite `ResourceManager` i frame finali in `resources/images`: `player0.png`, `player1.png`, `enemy_patrol0.png`, `enemy_patrol1.png`, `enemy_shooter0.png` ed `enemy_shooter1.png`. Gli sprite degli item si trovano nella stessa cartella con prefisso `item_`.
+
+I frame del protagonista provengono dallo sprite sheet didattico conservato in `resources/images/Link`; quelli dei nemici dallo sprite sheet in `resources/images/Enemies` (oppure `resources/images/enemies` su filesystem che usa quella variante). `SpriteSheetExtractor` genera i file runtime con nomi neutri, così il rendering non dipende dai nomi originali dei fogli. Dettagli e vincoli d'uso sono riportati in `resources/docs/SPRITE_ASSETS.txt`.
+
+## Audio
+
+I WAV in `resources/audio` sono beep originali generati per la consegna e non provengono da asset esterni. `AudioManager` usa `javax.sound.sampled.AudioInputStream`, `Clip` e `BufferedInputStream`, compatibili con JDK moderni.
 
 ## Persistenza
 
